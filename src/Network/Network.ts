@@ -5,7 +5,7 @@ import { Message } from "./Message";
 import { Destination } from "./Destination";
 import { Security } from "../Security";
 import { AsyncCallback, AsyncErrorCallback } from "../Types/AsyncCallback";
-import { DEFAULT_NETWORK_OPTIONS, NODE_VERSION, PROCESS_UUID } from "../globals";
+import { DEFAULT_NETWORK_OPTIONS, PROCESS_UUID } from "../globals";
 import { createDestination } from "./CreateDestination";
 import { EventEmitter } from "events";
 
@@ -29,13 +29,7 @@ export class Network extends EventEmitter {
             ...options,
         };
 
-        if (NODE_VERSION[0] === 0 && NODE_VERSION[1] < 12) {
-            //node v0.10 does not support passing an object to dgram.createSocket
-            //not sure if v0.11 does, but assuming it does not.
-            this.socket = dgram.createSocket("udp4");
-        } else {
-            this.socket = dgram.createSocket({ type: "udp4", reuseAddr: this.options.reuseAddr });
-        }
+        this.socket = dgram.createSocket({ type: "udp4", reuseAddr: this.options.reuseAddr });
 
         this.socket.on("message", (data: Buffer, rinfo: dgram.RemoteInfo) => {
             this.decode<Message>(data, (error: Error | null, message: Message | null) => {

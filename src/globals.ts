@@ -13,15 +13,6 @@ export const PROCESS_UUID = uuidv4();
  * @internal
  * @hidden
  */
-export const NODE_VERSION: [number, number, number] = process.version
-                                                             .replace("v", "")
-                                                             .split(/\./gi)
-                                                             .map(item => parseInt(item, 10)) as [number, number, number];
-
-/**
- * @internal
- * @hidden
- */
 export const RESERVED_EVENTS = ["promotion", "demotion", "added", "removed", "master", "hello"];
 
 /**
