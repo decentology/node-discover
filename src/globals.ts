@@ -48,7 +48,7 @@ export const DEFAULT_DISCOVER_OPTIONS: DiscoverOptions = {
     start: true,
     hostname: process.env.DISCOVERY_HOSTNAME ?? os.hostname(),
     server: true,
-    client: true,
+    client: false,
     masterTimeout: 2000,
     weight: -(Date.now() / Math.pow(10, String(Date.now()).length)),
     advertisement: null,
