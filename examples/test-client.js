@@ -1,10 +1,10 @@
-var Discover = require('../lib/discover.js');
+const { Discover } = require("../");
 
-var c = Discover({ client : true});
+const c = new Discover({ client: true });
 
 c.on("promotion", function () {
 	console.log("I was promoted.");
-	
+
 	c.advertise({
 		RedisMonitor : {
 			protocol : 'tcp',
@@ -15,7 +15,7 @@ c.on("promotion", function () {
 
 c.on("demotion", function () {
 	console.log("I was demoted.");
-	
+
 	c.advertise(null);
 });
 

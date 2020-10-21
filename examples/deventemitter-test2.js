@@ -1,7 +1,7 @@
-var dEventEmitter = require('./deventemitter.js');
+const dEventEmitter = require("./deventemitter.js");
 
-var dee = new dEventEmitter();
-var count = 0;
+const dee = new dEventEmitter();
+let count = 0;
 
 dee.once("connection::ready", function () {
 	console.log("connection::ready");

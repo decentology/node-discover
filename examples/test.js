@@ -1,12 +1,12 @@
-var Discover = require('../lib/discover.js');
+var { Discover } = require('../');
 
-var c = Discover(function (err) {
+var c = new Discover(function (err) {
 	console.log('Constructor callback. ', err);
 });
 
 c.on("promotion", function () {
 	console.log("I was promoted.");
-	
+
 	c.advertise({
 		RedisMonitor : {
 			protocol : 'tcp',
@@ -17,7 +17,7 @@ c.on("promotion", function () {
 
 c.on("demotion", function () {
 	console.log("I was demoted.");
-	
+
 	c.advertise(null);
 });
 

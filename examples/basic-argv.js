@@ -1,20 +1,20 @@
 /*
  * This is the most basic example of using Discover.
- * 
+ *
  * In this example all we are interested in is when new nodes are added to the
  * network or when they are removed. The master selection stuff happens behind
- * the scenes but we can completely ignore it and just handle the events for 
+ * the scenes but we can completely ignore it and just handle the events for
  * new nodes added or removed from the network.
- * 
+ *
  */
 
-var argv = require('optimist').argv;
-var Discover = require("../");
+const argv = require("optimist").argv;
+const { Discover } = require("../");
 
 delete argv._;
 delete argv.$0;
 
-var d = new Discover(argv);
+const d = new Discover(argv);
 
 console.log('d.me:' , d.me);
 console.log('instanceUuid', d.broadcast.instanceUuid);

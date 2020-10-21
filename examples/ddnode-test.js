@@ -1,9 +1,9 @@
-var ddnode = require('./ddnode.js');
+const ddnode = require("./ddnode.js");
 
-var d = new ddnode({
-	hello : function (what, cb) {
+const d = new ddnode({
+	hello: function (what, cb) {
 		return cb("hello " + what);
-	}
+	},
 });
 
 setInterval(function () {

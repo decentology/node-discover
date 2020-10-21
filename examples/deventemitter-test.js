@@ -1,10 +1,10 @@
-var dEventEmitter = require('./deventemitter.js');
+const dEventEmitter = require("./deventemitter.js");
 
-var dee = new dEventEmitter();
+const dee = new dEventEmitter();
 
 dee.on("connection::ready", function () {
 	console.log("connection::ready");
-	
+
 	dee.emit("ready::hello", "Hello there!");
 });
 

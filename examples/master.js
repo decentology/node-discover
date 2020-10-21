@@ -1,18 +1,18 @@
 /*
  * This is the most basic example of using Discover.
- * 
+ *
  * In this example all we are interested in is when new nodes are added to the
  * network or when they are removed. The master selection stuff happens behind
- * the scenes but we can completely ignore it and just handle the events for 
+ * the scenes but we can completely ignore it and just handle the events for
  * new nodes added or removed from the network.
- * 
+ *
  */
 
-var Discover = require("../");
+const { Discover } = require("../");
 
-var d = new Discover({ 
-	key : process.argv[2], weight : Date.now() * -1
-	, mastersRequired : 2
+const d = new Discover({
+	key: process.argv[2], weight: Date.now() * -1
+	, mastersRequired: 2,
 	//, leadershipElector : Discover.NoLeadershipElection
 });
 
@@ -81,7 +81,7 @@ process.stdin.on('data', function (chunk) {
 			console.log(d.me);
 			prompt();
 			break;
-		default: 
+		default:
 			prompt();
 	}
 });
