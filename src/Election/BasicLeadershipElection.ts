@@ -4,6 +4,9 @@ import { Node } from "../Types/Node";
 import { Message } from "../Network/Message";
 import * as dgram from "dgram";
 
+/**
+ * @category Election
+ */
 export class BasicLeadershipElection implements LeadershipElectionInterface {
 
     private discover: Discover;
@@ -17,13 +20,16 @@ export class BasicLeadershipElection implements LeadershipElectionInterface {
         let higherWeightMasters = 0;
         let higherWeightFound = false;
 
-        const me = this.discover.me;
-        const ids = Object.keys(this.discover.nodes);
+        const me = this.discover.getMe();
+        const nodes = this.discover.getNodes();
+        const options = this.discover.getOptions();
+
+        const ids = Object.keys(nodes);
 
         for (const id of ids) {
-            const node = this.discover.nodes[id];
+            const node = nodes[id];
 
-            if (node.isMaster && (+new Date() - node.lastSeen) < this.discover.options.masterTimeout) {
+            if (node.isMaster && (+new Date() - node.lastSeen) < options.masterTimeout) {
                 mastersFound++;
                 if (node.weight > me.weight) {
                     higherWeightMasters += 1;
@@ -37,11 +43,11 @@ export class BasicLeadershipElection implements LeadershipElectionInterface {
 
         const iAmMaster = me.isMaster;
 
-        if (iAmMaster && higherWeightMasters >= this.discover.options.mastersRequired) {
+        if (iAmMaster && higherWeightMasters >= options.mastersRequired) {
             this.discover.demote();
         }
 
-        if (!iAmMaster && mastersFound < this.discover.options.mastersRequired && me.isMasterEligible && !higherWeightFound) {
+        if (!iAmMaster && mastersFound < options.mastersRequired && me.isMasterEligible && !higherWeightFound) {
             //no masters found out of all our nodes, become one.
             this.discover.promote();
         }

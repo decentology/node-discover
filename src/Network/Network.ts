@@ -9,16 +9,17 @@ import { AsyncCallback, AsyncErrorCallback } from "../Types/AsyncCallback";
 import { DEFAULT_NETWORK_OPTIONS, NODE_VERSION, PROCESS_UUID } from "../globals";
 import { createDestination } from "./CreateDestination";
 
+/**
+ * @category Network
+ */
 export class Network extends EventEmitter {
-    public options: NetworkOptions;
+    private options: NetworkOptions;
 
-    public socket: dgram.Socket;
+    private socket: dgram.Socket;
 
-    public instanceUuid: string = uuidv4();
+    private instanceUuid: string = uuidv4();
 
-    public processUuid: string = PROCESS_UUID;
-
-    public destinations: Destination[] = [];
+    private destinations: Destination[] = [];
 
     public constructor(options: Partial<NetworkOptions> = {}) {
         super();
@@ -51,7 +52,7 @@ export class Network extends EventEmitter {
                 }
 
                 if (message) {
-                    if (message.pid == this.processUuid && this.options.ignoreProcess && message.iid !== this.instanceUuid) {
+                    if (message.pid == PROCESS_UUID && this.options.ignoreProcess && message.iid !== this.instanceUuid) {
                         return false;
                     } else if (message.iid == this.instanceUuid && this.options.ignoreInstance) {
                         return false;
@@ -68,6 +69,14 @@ export class Network extends EventEmitter {
             //TODO: Deal with this
             /*console.log("Network error: ", err.stack);*/
         });
+    }
+
+    public getOptions(): NetworkOptions {
+        return this.options;
+    }
+
+    public getProcessUuid(): string {
+        return PROCESS_UUID;
     }
 
     public getInstanceUuid(): string {

@@ -14,24 +14,23 @@ import { NodeMapping } from "./Types/NodeMapping";
 import { Events } from "./Events";
 
 export class Discover extends EventEmitter {
+    private options: DiscoverOptions;
 
-    public options: DiscoverOptions;
+    private me: MeNode;
 
-    public me: MeNode;
+    private nodes: NodeMapping = {};
 
-    public nodes: NodeMapping = {};
+    private broadcast: Network;
 
-    public broadcast: Network;
+    private channels: string[] = [];
 
-    public channels: string[] = [];
+    private evaluateHello: (data: Node, message: Message, rinfo: dgram.RemoteInfo) => void;
 
-    public evaluateHello: (data: Node, message: Message, rinfo: dgram.RemoteInfo) => void;
+    private check: () => void;
 
-    public check: () => void;
+    private running: boolean = false;
 
-    public running: boolean = false;
-
-    public leadershipElector?: LeadershipElectionInterface;
+    private leadershipElector?: LeadershipElectionInterface;
 
     private checkId: NodeJS.Timeout | null = null;
 
@@ -180,9 +179,33 @@ export class Discover extends EventEmitter {
      * @returns {number}
      */
     public static weight: () => number = () => {
-        //default to negative, decimal now value
+        // default to negative, decimal now value
         return -(Date.now() / Math.pow(10, String(Date.now()).length));
     };
+
+    public getBroadcast(): Network {
+        return this.broadcast;
+    }
+
+    public getOptions(): DiscoverOptions {
+        return { ...this.options };
+    }
+
+    public isRunning(): boolean {
+        return this.running;
+    }
+
+    public getChannels(): string[] {
+        return this.channels;
+    }
+
+    public getMe(): MeNode {
+        return { ...this.me };
+    }
+
+    public getNodes(): NodeMapping {
+        return this.nodes;
+    }
 
     /**
      * Start broadcasting hello packets and checking for missing nodes (start is called automatically in the constructor)

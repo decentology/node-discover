@@ -1,3 +1,6 @@
+/**
+ * @category Network
+ */
 export interface NetworkOptions {
     /**
      * Address to bind to

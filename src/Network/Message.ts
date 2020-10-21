@@ -1,3 +1,6 @@
+/**
+ * @category Network
+ */
 export interface Message<DataType = unknown> {
     pid: string;
 

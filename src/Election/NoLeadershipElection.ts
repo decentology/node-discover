@@ -3,6 +3,9 @@ import { Node } from "../Types/Node";
 import { Message } from "../Network/Message";
 import * as dgram from "dgram";
 
+/**
+ * @category Election
+ */
 export class NoLeadershipElection implements LeadershipElectionInterface {
     public check(): void {
     }

@@ -3,6 +3,9 @@ import * as dgram from "dgram";
 import { Message } from "../Network/Message";
 import { Discover } from "../Discover";
 
+/**
+ * @category Election
+ */
 export interface LeadershipElectionInterface {
 
     onNodeAdded(node: Node, message: Message, rinfo: dgram.RemoteInfo): void;
