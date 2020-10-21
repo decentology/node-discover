@@ -7,17 +7,18 @@ import { Destination } from "./Destination";
 import { Security } from "../Security";
 import { AsyncCallback, AsyncErrorCallback } from "../Types/AsyncCallback";
 import { DEFAULT_NETWORK_OPTIONS, NODE_VERSION, PROCESS_UUID } from "../globals";
+import { createDestination } from "./CreateDestination";
 
 export class Network extends EventEmitter {
-    private options: NetworkOptions;
+    public options: NetworkOptions;
 
-    private socket: dgram.Socket;
+    public socket: dgram.Socket;
 
-    private instanceUuid: string = uuidv4();
+    public instanceUuid: string = uuidv4();
 
-    private processUuid: string = PROCESS_UUID;
+    public processUuid: string = PROCESS_UUID;
 
-    private destinations: Destination[] = [];
+    public destinations: Destination[] = [];
 
     public constructor(options: Partial<NetworkOptions> = {}) {
         super();
@@ -88,7 +89,7 @@ export class Network extends EventEmitter {
             }
 
             //make sure each destination is a Destination instance
-            this.destinations = destinations.map(destination => new Destination(destination));
+            this.destinations = destinations.map(destination => createDestination(destination));
 
             return callback && callback(null, null);
         });

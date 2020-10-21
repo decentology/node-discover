@@ -1,9 +1,9 @@
-export interface MeNode {
+export interface MeNode<AdvertisementType = unknown> {
     address: string;
 
     isMaster: boolean;
 
-    advertisement: unknown;
+    advertisement: AdvertisementType;
 
     weight: number;
 

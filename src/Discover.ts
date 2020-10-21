@@ -11,6 +11,7 @@ import { resolveLeadership } from "./Election/resolveLeadership";
 import { LeadershipElectionInterface } from "./Election/LeadershipElectionInterface";
 import { ReadyCallback } from "./Types/ReadyCallback";
 import { NodeMapping } from "./Types/NodeMapping";
+import { Events } from "./Events";
 
 export class Discover extends EventEmitter {
 
@@ -20,28 +21,37 @@ export class Discover extends EventEmitter {
 
     public nodes: NodeMapping = {};
 
-    private broadcast: Network;
+    public broadcast: Network;
 
-    private channels: string[] = [];
+    public channels: string[] = [];
 
-    private evaluateHello: (data: Node, message: Message, rinfo: dgram.RemoteInfo) => void;
+    public evaluateHello: (data: Node, message: Message, rinfo: dgram.RemoteInfo) => void;
 
-    private check: () => void;
+    public check: () => void;
 
-    private running: boolean = false;
+    public running: boolean = false;
 
-    private stop: () => void;
+    public leadershipElector?: LeadershipElectionInterface;
 
-    private start: (callback?: AsyncCallback<boolean>) => void;
+    private checkId: NodeJS.Timeout | null = null;
 
-    private leadershipElector?: LeadershipElectionInterface;
+    private helloId: NodeJS.Timeout | null = null;
 
     constructor();
 
+    /**
+     *
+     * @param {ReadyCallback} callback function that is called when everything is up and running
+     */
     constructor(callback: ReadyCallback);
 
     constructor(options: Partial<DiscoverOptions>);
 
+    /**
+     *
+     * @param {Partial<DiscoverOptions>} options
+     * @param {ReadyCallback} callback function that is called when everything is up and running
+     */
     constructor(options: Partial<DiscoverOptions>, callback: ReadyCallback);
 
     constructor(opts?: Partial<DiscoverOptions> | ReadyCallback, readyCallback?: ReadyCallback) {
@@ -109,18 +119,18 @@ export class Discover extends EventEmitter {
 
             if (isNew) {
                 // new node found
-                this.emit("added", node, message, rinfo);
+                this.emit(Events.ADDED, node, message, rinfo);
             }
 
             if (node.isMaster) {
                 // if we have this node and it was not previously a master then it is a new master node
                 if ((isNew || !wasMaster)) {
                     // this is a new master
-                    this.emit("master", node, message, rinfo);
+                    this.emit(Events.MASTER, node, message, rinfo);
                 }
             }
 
-            this.emit("helloReceived", node, message, rinfo, isNew, wasMaster);
+            this.emit(Events.HELLO_RECEIVED, node, message, rinfo, isNew, wasMaster);
         };
 
         this.broadcast.on("hello", this.evaluateHello);
@@ -138,86 +148,17 @@ export class Discover extends EventEmitter {
                     // we haven't seen the node recently
                     // delete the node from our nodes list
                     delete this.nodes[id];
-                    this.emit("removed", node);
+                    this.emit(Events.REMOVED, node);
                 }
             }
 
             this.emit("check");
         };
 
-        let checkId: NodeJS.Timeout | null = null;
-
-        let helloId: NodeJS.Timeout | null = null;
-
-        this.start = (callback?: AsyncCallback<boolean>) => {
-            if (this.running) {
-                callback && callback(null, false);
-
-                return;
-            }
-
-            this.broadcast.start((error: Error | null) => {
-                if (error) {
-                    return callback && callback(error, null);
-                }
-
-                this.running = true;
-
-                checkId = setInterval(this.check, checkInterval());
-
-                if (this.options.server) {
-                    //send hello every helloInterval
-                    helloId = setInterval(() => this.hello(), helloInterval());
-
-                    this.hello();
-                }
-
-                this.emit("started", this);
-
-                return callback && callback(null, true);
-            });
-        };
-
-        this.stop = () => {
-            if (!this.running) {
-                return;
-            }
-
-            this.broadcast.stop();
-
-            if (checkId) {
-                clearInterval(checkId);
-            }
-
-            if (helloId) {
-                clearInterval(helloId);
-            }
-
-            this.emit("stopped", this);
-
-            this.running = false;
-        };
-
         //check if auto start is enabled
         if (this.options.start) {
             this.start(callback);
         }
-
-        const helloInterval = () => {
-            if (typeof this.options.helloInterval === "function") {
-                return this.options.helloInterval.call(this);
-            }
-
-            return this.options.helloInterval;
-        };
-
-        const checkInterval = () => {
-            if (typeof this.options.checkInterval === "function") {
-                return this.options.checkInterval.call(this);
-            }
-
-            return this.options.checkInterval;
-        };
     }
 
     /**
@@ -243,33 +184,145 @@ export class Discover extends EventEmitter {
         return -(Date.now() / Math.pow(10, String(Date.now()).length));
     };
 
+    /**
+     * Start broadcasting hello packets and checking for missing nodes (start is called automatically in the constructor)
+     *
+     * @example
+     * ```js
+     * const { Discover } = require('node-discover');
+     * const d = new Discover();
+     *
+     * d.start();
+     * ```
+     * @param {AsyncCallback<boolean>} callback
+     */
+    public start(callback?: AsyncCallback<boolean>) {
+        if (this.running) {
+            callback && callback(null, false);
+
+            return;
+        }
+
+        this.broadcast.start((error: Error | null) => {
+            if (error) {
+                return callback && callback(error, null);
+            }
+
+            this.running = true;
+
+            this.checkId = setInterval(this.check, this.getCheckInterval());
+
+            if (this.options.server) {
+                //send hello every helloInterval
+                this.helloId = setInterval(() => this.hello(), this.getHelloInterval());
+
+                this.hello();
+            }
+
+            this.emit("started", this);
+
+            return callback && callback(null, true);
+        });
+    }
+
+    /**
+     * Promote the instance to master.
+     * This causes the old master to demote.
+     *
+     * @example
+     * ```js
+     * const { Discover } = require('node-discover');
+     * const d = new Discover();
+     *
+     * d.promote();
+     * ```
+     */
     public promote() {
         this.me.isMasterEligible = true;
         this.me.isMaster = true;
-        this.emit("promotion", this.me);
+        this.emit(Events.PROMOTION, this.me);
         this.hello();
     }
 
+    /**
+     * Demote the instance from being a master.
+     * This causes another node to become master
+     *
+     * @example
+     * ```js
+     * const { Dicover } = require('node-discover');
+     * var d = new Discover();
+     *
+     * d.demote(); //this node is still eligible to become a master node.
+     *
+     * // or
+     *
+     * d.demote(true); //this node is no longer eligible to become a master node.
+     * ```
+     * @param {boolean} permanent  if true it specify that this node should not automatically become master again.
+     */
     public demote(permanent = false) {
         this.me.isMasterEligible = !permanent;
         this.me.isMaster = false;
-        this.emit("demotion", this.me);
+        this.emit(Events.DEMOTION, this.me);
         this.hello();
     }
 
     public master(node: Node) {
-        this.emit("master", node);
+        this.emit(Events.MASTER, node);
     }
 
     public hello(): void {
         this.broadcast.send("hello", this.me);
-        this.emit("helloEmitted");
+        this.emit(Events.HELLO_EMITTED);
     }
 
+    /**
+     * Advertise an object or message with each hello packet; this is completely arbitrary.
+     * Make this object/message whatever applies to your application that you want your nodes to know about the other nodes.
+     *
+     * @example
+     * ```js
+     * const { Discover } = require('node-discover');
+     * const d = new Discover();
+     *
+     * d.advertise({
+     *   localServices : [
+     *     { type : 'http', port : '9911', description : 'my awesome http server' },
+     *     { type : 'smtp', port : '25', description : 'smtp server' },
+     *   ]
+     * });
+     *
+     * // or
+     *
+     * d.advertise("i love nodejs");
+     *
+     * // or
+     *
+     * d.advertise({ something : "something" });
+     * ```
+     * @param advertisement
+     */
     public advertise(advertisement: unknown) {
         this.me.advertisement = advertisement;
     }
 
+    /**
+     * For each node execute given callback
+     *
+     * @example
+     * ```js
+     * const { Discover } = require('node-discover');
+     * const d = new Discover();
+     *
+     * d.eachNode(function (node) {
+     *   if (node.advertisement == "i love nodejs") {
+     *     console.log("nodejs loves this node too");
+     *   }
+     * });
+     * ```
+     * @param {(node: Node) => void} callback
+     */
     public eachNode(callback: (node: Node) => void) {
         const ids = Object.keys(this.nodes);
 
@@ -278,7 +331,39 @@ export class Discover extends EventEmitter {
         }
     }
 
-    public join(channel: string, callback: AsyncCallback<any>) {
+    /**
+     * Join a channel on which to receive messages/objects
+     *
+     * **Reserved channels**
+     *
+     * - promotion
+     * - demotion
+     * - added
+     * - removed
+     * - master
+     * - hello
+     *
+     * @example
+     * ```js
+     * const { Discover } = require('node-discover');
+     * const d = new Discover();
+     *
+     * // Pass the channel and the callback function for handling received data from that channel
+     * const success = d.join("config-updates", data => {
+     *   if (data.redisMaster) {
+     *     // connect to the new redis master
+     *   }
+     * });
+     *
+     * if (!success) {
+     *   // could not join that channel; probably because it is reserved
+     * }
+     * ```
+     * @param {string} channel
+     * @param {AsyncCallback<DataType>} callback
+     * @returns {boolean}
+     */
+    public join<DataType>(channel: string, callback: AsyncCallback<DataType>) {
         if (~RESERVED_EVENTS.indexOf(channel)) {
             return false;
         }
@@ -300,6 +385,24 @@ export class Discover extends EventEmitter {
         return true;
     }
 
+    /**
+     * Leave a channel
+     *
+     * @example
+     * ```js
+     * const { Discover } = require('node-discover');
+     * const d = new Discover();
+     *
+     * // Pass the channel which we want to leave
+     * const success = d.leave("config-updates");
+     *
+     * if (!success) {
+     *   // could leave channel; who cares?
+     * }
+     * ```
+     * @param {string} channel
+     * @returns {boolean}
+     */
     public leave(channel: string) {
         this.broadcast.removeAllListeners(channel);
 
@@ -312,6 +415,24 @@ export class Discover extends EventEmitter {
         return true;
     }
 
+    /**
+     * Send a message/object on a specific channel
+     *
+     * @example
+     * ```js
+     * const { Discover } = require('node-discover');
+     * const d = new Discover();
+     *
+     * const success = d.send("config-updates", { redisMaster : "10.0.1.4" });
+     *
+     * if (!succes) {
+     *   // could not send on that channel; probably because it is reserved
+     * }
+     * ```
+     * @param {string} channel
+     * @param data
+     * @returns {boolean}
+     */
     public send(channel: string, data: unknown) {
         if (~RESERVED_EVENTS.indexOf(channel)) {
             return false;
@@ -320,5 +441,52 @@ export class Discover extends EventEmitter {
         this.broadcast.send(channel, data);
 
         return true;
+    }
+
+    /**
+     * Stop broadcasting hello packets and checking for missing nodes
+     *
+     * @example
+     * ```js
+     * const { Discover } = require('node-discover');
+     * const d = new Discover();
+     *
+     * d.stop();
+     * ```
+     */
+    public stop() {
+        if (!this.running) {
+            return;
+        }
+
+        this.broadcast.stop();
+
+        if (this.checkId) {
+            clearInterval(this.checkId);
+        }
+
+        if (this.helloId) {
+            clearInterval(this.helloId);
+        }
+
+        this.emit("stopped", this);
+
+        this.running = false;
+    }
+
+    private getCheckInterval(): number {
+        if (typeof this.options.checkInterval === "function") {
+            return this.options.checkInterval.call(this);
+        }
+
+        return this.options.checkInterval;
+    }
+
+    private getHelloInterval(): number {
+        if (typeof this.options.helloInterval === "function") {
+            return this.options.helloInterval.call(this);
+        }
+
+        return this.options.helloInterval;
     }
 }

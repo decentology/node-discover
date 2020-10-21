@@ -1,21 +1,7 @@
-export class Destination {
+export interface Destination {
 
-    public address: string;
+    address: string;
 
-    public port?: number;
+    port?: number;
 
-    public constructor(address: string, port?: number) {
-
-        if (!port) {
-            if (~address.indexOf(":")) {
-                const tokens = address.split(":");
-
-                address = tokens[0];
-                port = parseInt(tokens[1], 10);
-            }
-        }
-
-        this.address = address;
-        this.port = port;
-    }
 }
