@@ -1,9 +1,13 @@
 import { LeadershipElectionInterface } from "./LeadershipElectionInterface";
 import { Discover } from "../Discover";
 import { BasicLeadershipElection } from "./BasicLeadershipElection";
-import { LeadershipElectionConstructable } from "./leadershipElectionConstructable";
+import { LeadershipElectionConstructable } from "./LeadershipElectionConstructable";
 import { Events } from "../Events";
 
+/**
+ * @internal
+ * @hidden
+ */
 export function resolveLeadership(leadershipElector: LeadershipElectionInterface | LeadershipElectionConstructable | null | false, discover: Discover) {
     let elector: LeadershipElectionInterface;
 

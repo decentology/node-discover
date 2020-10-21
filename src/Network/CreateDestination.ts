@@ -1,5 +1,9 @@
 import { Destination } from "./Destination";
 
+/**
+ * @internal
+ * @hidden
+ */
 export function createDestination(address: string, port?: number): Destination {
 
     if (!port) {

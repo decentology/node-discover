@@ -1,6 +1,6 @@
 import { NetworkOptions } from "./Network/NetworkOptions";
 import { LeadershipElectionInterface } from "./Election/LeadershipElectionInterface";
-import { LeadershipElectionConstructable } from "./Election/leadershipElectionConstructable";
+import { LeadershipElectionConstructable } from "./Election/LeadershipElectionConstructable";
 
 export interface DiscoverOptions extends NetworkOptions {
 

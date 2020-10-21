@@ -3,15 +3,31 @@ import os from "os";
 import { NetworkOptions } from "./Network/NetworkOptions";
 import { DiscoverOptions } from "./DiscoverOptions";
 
+/**
+ * @internal
+ * @hidden
+ */
 export const PROCESS_UUID = uuidv4();
 
+/**
+ * @internal
+ * @hidden
+ */
 export const NODE_VERSION: [number, number, number] = process.version
                                                              .replace("v", "")
                                                              .split(/\./gi)
                                                              .map(item => parseInt(item, 10)) as [number, number, number];
 
+/**
+ * @internal
+ * @hidden
+ */
 export const RESERVED_EVENTS = ["promotion", "demotion", "added", "removed", "master", "hello"];
 
+/**
+ * @internal
+ * @hidden
+ */
 export const DEFAULT_NETWORK_OPTIONS: NetworkOptions = {
     address: "0.0.0.0",
     port: 12345,
@@ -27,6 +43,10 @@ export const DEFAULT_NETWORK_OPTIONS: NetworkOptions = {
     hostname: process.env.DISCOVERY_HOSTNAME ?? os.hostname(),
 };
 
+/**
+ * @internal
+ * @hidden
+ */
 export const DEFAULT_DISCOVER_OPTIONS: DiscoverOptions = {
     ...DEFAULT_NETWORK_OPTIONS,
     helloInterval: 1000,

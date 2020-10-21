@@ -1,5 +1,9 @@
 import crypto from "crypto";
 
+/**
+ * @internal
+ * @hidden
+ */
 export class Security {
     public static encrypt(data: string, key: string) {
         const buffer = [];
