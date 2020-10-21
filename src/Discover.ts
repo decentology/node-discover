@@ -40,6 +40,8 @@ export class Discover extends EventEmitter {
 
     constructor(callback: ReadyCallback);
 
+    constructor(options: Partial<DiscoverOptions>);
+
     constructor(options: Partial<DiscoverOptions>, callback: ReadyCallback);
 
     constructor(opts?: Partial<DiscoverOptions> | ReadyCallback, readyCallback?: ReadyCallback) {
