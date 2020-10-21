@@ -3,19 +3,19 @@ const dEventEmitter = require("./deventemitter.js");
 const dee = new dEventEmitter();
 
 dee.on("connection::ready", function () {
-	console.log("connection::ready");
+    console.log("connection::ready");
 
-	dee.emit("ready::hello", "Hello there!");
+    dee.emit("ready::hello", "Hello there!");
 });
 
 dee.on("connection::end", function () {
-	console.log("connection::end");
+    console.log("connection::end");
 });
 
 dee.on("self::promoted", function () {
-	console.log("*****I am now in charge*****");
+    console.log("*****I am now in charge*****");
 });
 
 dee.on("*::hello", function (data) {
-	console.log(data);
+    console.log(data);
 });

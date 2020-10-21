@@ -16,23 +16,23 @@ delete argv.$0;
 
 const d = new Discover(argv);
 
-console.log('d.me:' , d.me);
-console.log('instanceUuid', d.broadcast.instanceUuid);
-console.log('processUuid', d.broadcast.processUuid);
-d.advertise({ testing : Math.random() });
+console.log("d.me:", d.me);
+console.log("instanceUuid", d.broadcast.instanceUuid);
+console.log("processUuid", d.broadcast.processUuid);
+d.advertise({ testing: Math.random() });
 
 d.on("added", function (obj) {
-	console.log("New node added to the network.");
-	console.log(obj);
+    console.log("New node added to the network.");
+    console.log(obj);
 });
 
 d.on("removed", function (obj) {
-	console.log("Node removed from the network.");
-	console.log(obj);
+    console.log("Node removed from the network.");
+    console.log(obj);
 });
 
 d.on("error", function (err) {
-	console.log("error", err);
+    console.log("error", err);
 });
 
 module.exports = d;
