@@ -1,6 +1,7 @@
-
 /**
  * Each event is passed the `Node Object` for which the event is occurring.
+ *
+ * @category Discover
  */
 export enum Events {
     /**
@@ -58,4 +59,23 @@ export enum Events {
      * @type {Events.HELLO_EMITTED}
      */
     HELLO_EMITTED = "helloEmitted",
+
+    /**
+     * Triggered when discover started
+     *
+     * @type {Events.STARTED}
+     */
+    STARTED = "started",
+
+    /**
+     * Triggered when discover stopped
+     *
+     * @type {Events.STOPPED}
+     */
+    STOPPED = "stopped",
+
+    /**
+     * @type {Events.CHECK}
+     */
+    CHECK = "check",
 }

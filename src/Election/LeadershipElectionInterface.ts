@@ -1,7 +1,7 @@
-import { Node } from "../Types/Node";
+import { Node } from "../Discover/Node";
 import * as dgram from "dgram";
 import { Message } from "../Network/Message";
-import { Discover } from "../Discover";
+import { Discover } from "../Discover/Discover";
 
 /**
  * @category Election

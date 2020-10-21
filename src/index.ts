@@ -1,11 +1,11 @@
 
-export * from "./Discover";
-export * from "./DiscoverOptions";
+export * from "./Discover/Discover";
+export * from "./Discover/DiscoverOptions";
 
-export * from "./Events";
+export * from "./Discover/Events";
 
-export * from "./Types/MeNode";
-export * from "./Types/Node";
+export * from "./Discover/MeNode";
+export * from "./Discover/Node";
 
 export * from "./Network/Network";
 export * from "./Network/NetworkOptions";

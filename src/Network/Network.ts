@@ -1,5 +1,4 @@
 import { NetworkOptions } from "./NetworkOptions";
-import { EventEmitter } from "events";
 import * as dgram from "dgram";
 import { v4 as uuidv4 } from "uuid";
 import { Message } from "./Message";
@@ -8,6 +7,7 @@ import { Security } from "../Security";
 import { AsyncCallback, AsyncErrorCallback } from "../Types/AsyncCallback";
 import { DEFAULT_NETWORK_OPTIONS, NODE_VERSION, PROCESS_UUID } from "../globals";
 import { createDestination } from "./CreateDestination";
+import { EventEmitter } from "events";
 
 /**
  * @category Network

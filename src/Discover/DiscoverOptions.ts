@@ -1,7 +1,10 @@
-import { NetworkOptions } from "./Network/NetworkOptions";
-import { LeadershipElectionInterface } from "./Election/LeadershipElectionInterface";
-import { LeadershipElectionConstructable } from "./Election/LeadershipElectionConstructable";
+import { NetworkOptions } from "../Network/NetworkOptions";
+import { LeadershipElectionInterface } from "../Election/LeadershipElectionInterface";
+import { LeadershipElectionConstructable } from "../Election/LeadershipElectionConstructable";
 
+/**
+ * @category Discover
+ */
 export interface DiscoverOptions extends NetworkOptions {
 
     /**

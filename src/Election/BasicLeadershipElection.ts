@@ -1,6 +1,6 @@
 import { LeadershipElectionInterface } from "./LeadershipElectionInterface";
-import { Discover } from "../Discover";
-import { Node } from "../Types/Node";
+import { Discover } from "../Discover/Discover";
+import { Node } from "../Discover/Node";
 import { Message } from "../Network/Message";
 import * as dgram from "dgram";
 

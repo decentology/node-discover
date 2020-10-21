@@ -1,18 +1,21 @@
-import { EventEmitter } from "events";
 import { DiscoverOptions } from "./DiscoverOptions";
-import { DEFAULT_DISCOVER_OPTIONS, RESERVED_EVENTS } from "./globals";
-import { Network } from "./Network/Network";
+import { DEFAULT_DISCOVER_OPTIONS, RESERVED_EVENTS } from "../globals";
+import { Network } from "../Network/Network";
 import * as dgram from "dgram";
-import { Message } from "./Network/Message";
-import { AsyncCallback } from "./Types/AsyncCallback";
-import { Node } from "./Types/Node";
-import { MeNode } from "./Types/MeNode";
-import { resolveLeadership } from "./Election/resolveLeadership";
-import { LeadershipElectionInterface } from "./Election/LeadershipElectionInterface";
-import { ReadyCallback } from "./Types/ReadyCallback";
-import { NodeMapping } from "./Types/NodeMapping";
+import { Message } from "../Network/Message";
+import { AsyncCallback } from "../Types/AsyncCallback";
+import { Node } from "./Node";
+import { MeNode } from "./MeNode";
+import { resolveLeadership } from "../Election/resolveLeadership";
+import { LeadershipElectionInterface } from "../Election/LeadershipElectionInterface";
+import { ReadyCallback } from "../Types/ReadyCallback";
+import { NodeMapping } from "./NodeMapping";
 import { Events } from "./Events";
+import { EventEmitter } from "events";
 
+/**
+ * @category Discover
+ */
 export class Discover extends EventEmitter {
     private options: DiscoverOptions;
 
@@ -151,7 +154,7 @@ export class Discover extends EventEmitter {
                 }
             }
 
-            this.emit("check");
+            this.emit(Events.CHECK);
         };
 
         //check if auto start is enabled
@@ -242,7 +245,7 @@ export class Discover extends EventEmitter {
                 this.hello();
             }
 
-            this.emit("started", this);
+            this.emit(Events.STARTED, this);
 
             return callback && callback(null, true);
         });
@@ -492,7 +495,7 @@ export class Discover extends EventEmitter {
             clearInterval(this.helloId);
         }
 
-        this.emit("stopped", this);
+        this.emit(Events.STOPPED, this);
 
         this.running = false;
     }

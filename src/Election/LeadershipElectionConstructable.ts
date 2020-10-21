@@ -1,4 +1,4 @@
-import { Discover } from "../Discover";
+import { Discover } from "../Discover/Discover";
 import { LeadershipElectionInterface } from "./LeadershipElectionInterface";
 
 /**

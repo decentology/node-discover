@@ -1,3 +1,6 @@
+/**
+ * @category Discover
+ */
 export interface MeNode<AdvertisementType = unknown> {
     address: string;
 

@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import os from "os";
 import { NetworkOptions } from "./Network/NetworkOptions";
-import { DiscoverOptions } from "./DiscoverOptions";
+import { DiscoverOptions } from "./Discover/DiscoverOptions";
 
 /**
  * @internal
