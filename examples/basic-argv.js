@@ -9,7 +9,7 @@
  */
 
 const argv = require("optimist").argv;
-const { Discover } = require("../");
+const { Discover, PROCESS_UUID } = require("../");
 
 delete argv._;
 delete argv.$0;
@@ -17,8 +17,8 @@ delete argv.$0;
 const d = new Discover(argv);
 
 console.log("d.me:", d.me);
-console.log("instanceUuid", d.broadcast.instanceUuid);
-console.log("processUuid", d.broadcast.processUuid);
+console.log("instanceUuid", d.getId());
+console.log("processUuid", PROCESS_UUID);
 d.advertise({ testing: Math.random() });
 
 d.on("added", function (obj) {

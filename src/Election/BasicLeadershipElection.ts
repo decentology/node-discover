@@ -1,19 +1,9 @@
-import { LeadershipElectionInterface } from "./LeadershipElectionInterface";
-import { Discover } from "../Discover/Discover";
 import { Node } from "../Discover/Node";
 import { Message } from "../Network/Message";
 import * as dgram from "dgram";
+import { AbstractLeadershipElection } from "./AbstractLeadershipElection";
 
-/**
- * @category Election
- */
-export class BasicLeadershipElection implements LeadershipElectionInterface {
-
-    private discover: Discover;
-
-    public constructor(discover: Discover) {
-        this.discover = discover;
-    }
+export class BasicLeadershipElection extends AbstractLeadershipElection {
 
     public check(): void {
         let mastersFound = 0;
@@ -65,8 +55,7 @@ export class BasicLeadershipElection implements LeadershipElectionInterface {
     public onNodeRemoved(node: Node): void {
     }
 
-    public start(discover: Discover): void {
-        this.discover = discover;
+    public start(): void {
     }
 
     public stop(): void {

@@ -1,12 +1,10 @@
-import { LeadershipElectionInterface } from "./LeadershipElectionInterface";
 import { Node } from "../Discover/Node";
 import { Message } from "../Network/Message";
 import * as dgram from "dgram";
+import { AbstractLeadershipElection } from "./AbstractLeadershipElection";
 
-/**
- * @category Election
- */
-export class NoLeadershipElection implements LeadershipElectionInterface {
+export class NoLeadershipElection extends AbstractLeadershipElection {
+
     public check(): void {
     }
 

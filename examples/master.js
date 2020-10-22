@@ -16,7 +16,7 @@ const d = new Discover({
     //, leadershipElector : Discover.NoLeadershipElection
 });
 
-console.log("I am " + d.broadcast.instanceUuid);
+console.log("I am " + d.getId());
 
 d.on("added", function (obj) {
     process.stdout.write("\nNew node discovered on the network.");
@@ -74,11 +74,11 @@ process.stdin.on("data", function (chunk) {
             d.demote(true);
             break;
         case "list":
-            console.log(d.nodes);
+            console.log(d.getNodes());
             prompt();
             break;
         case "me":
-            console.log(d.me);
+            console.log(d.getMe());
             prompt();
             break;
         default:

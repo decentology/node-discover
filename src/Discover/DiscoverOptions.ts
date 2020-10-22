@@ -1,11 +1,7 @@
-import { NetworkOptions } from "../Network/NetworkOptions";
 import { LeadershipElectionInterface } from "../Election/LeadershipElectionInterface";
-import { LeadershipElectionConstructable } from "../Election/LeadershipElectionConstructable";
+import { NetworkInterface } from "../Network/NetworkInterface";
 
-/**
- * @category Discover
- */
-export interface DiscoverOptions extends NetworkOptions {
+export interface DiscoverOptions<AdvertisementType = unknown, EventsType extends Record<string, unknown> = Record<string, unknown>> {
 
     /**
      * How often to broadcast a hello packet in milliseconds
@@ -42,7 +38,7 @@ export interface DiscoverOptions extends NetworkOptions {
      */
     mastersRequired: number;
 
-    leadershipElector: LeadershipElectionInterface | LeadershipElectionConstructable | null | false;
+    leadershipElector: LeadershipElectionInterface | false;
 
     /**
      * A number used to determine the preference for a specific process to become master
@@ -66,6 +62,27 @@ export interface DiscoverOptions extends NetworkOptions {
     /**
      * The initial advertisement object which is sent with each hello packet.
      */
-    advertisement: unknown;
+    advertisement: AdvertisementType | null;
+
+    /**
+     * If set to false, will not ignore messages from other Discover instances within the same process (on non-reserved channels), join() will receive them.
+     *
+     * @default true
+     */
+    ignoreProcess: boolean;
+
+    /**
+     * If set to false, will not ignore messages from self (on non-reserved channels), join() will receive them.
+     *
+     * @default true
+     */
+    ignoreInstance: boolean;
+
+    /**
+     * The network to interact with
+     *
+     * @default BroadcastNetwork
+     */
+    network: NetworkInterface<EventsType>;
 
 }

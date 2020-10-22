@@ -1,6 +1,6 @@
 const portfinder = require("portfinder");
 const dnode = require("dnode");
-const { Discover } = require("../");
+const { Discover, PROCESS_UUID } = require("../");
 
 const ddnode = module.exports = function (options) {
     const self = this,
@@ -39,7 +39,7 @@ const ddnode = module.exports = function (options) {
             dnode: { port: port },
         });
 
-        options.serverBlock.__id__ = d.broadcast.processUuid;
+        options.serverBlock.__id__ = PROCESS_UUID;
 
         const server = dnode(options.serverBlock);
 

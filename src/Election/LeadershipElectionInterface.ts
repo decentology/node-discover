@@ -3,9 +3,6 @@ import * as dgram from "dgram";
 import { Message } from "../Network/Message";
 import { Discover } from "../Discover/Discover";
 
-/**
- * @category Election
- */
 export interface LeadershipElectionInterface {
 
     onNodeAdded(node: Node, message: Message, rinfo: dgram.RemoteInfo): void;
@@ -21,5 +18,7 @@ export interface LeadershipElectionInterface {
     start(discover: Discover): void;
 
     stop(): void;
+
+    bind(discover: Discover): void;
 
 }

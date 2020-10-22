@@ -1,35 +1,30 @@
 import { DiscoverOptions } from "./DiscoverOptions";
-import { DEFAULT_DISCOVER_OPTIONS, RESERVED_EVENTS } from "../globals";
-import { Network } from "../Network/Network";
+import { PROCESS_UUID, RESERVED_EVENTS } from "../internal";
 import * as dgram from "dgram";
-import { Message } from "../Network/Message";
-import { AsyncCallback } from "../Types/AsyncCallback";
+import { AsyncCallback, AsyncNoopCallback } from "../Types/AsyncCallback";
 import { Node } from "./Node";
 import { MeNode } from "./MeNode";
-import { resolveLeadership } from "../Election/resolveLeadership";
+import { v4 as uuidv4 } from "uuid";
 import { LeadershipElectionInterface } from "../Election/LeadershipElectionInterface";
-import { ReadyCallback } from "../Types/ReadyCallback";
 import { NodeMapping } from "./NodeMapping";
 import { Events } from "./Events";
 import { EventEmitter } from "events";
+import { BroadcastNetwork } from "../Network/BroadcastNetwork";
+import { NetworkMessage } from "../Network/NetworkMessage";
+import { BasicLeadershipElection, NetworkInterface } from "..";
+import { NetworkEvents } from "../Network/NetworkEvents";
 
-/**
- * @category Discover
- */
-export class Discover extends EventEmitter {
-    private options: DiscoverOptions;
+export class Discover<AdvertisementType = unknown, ChannelsType extends Record<string, unknown> = Record<string, unknown>> extends EventEmitter {
 
-    private me: MeNode;
+    private options: DiscoverOptions<AdvertisementType, ChannelsType>;
+
+    private id: string = uuidv4();
+
+    private me: MeNode<AdvertisementType>;
 
     private nodes: NodeMapping = {};
 
-    private broadcast: Network;
-
     private channels: string[] = [];
-
-    private evaluateHello: (data: Node, message: Message, rinfo: dgram.RemoteInfo) => void;
-
-    private check: () => void;
 
     private running: boolean = false;
 
@@ -42,28 +37,38 @@ export class Discover extends EventEmitter {
     constructor();
 
     /**
-     *
-     * @param {ReadyCallback} callback function that is called when everything is up and running
+     * @param {AsyncNoopCallback} callback function that is called when everything is up and running
      */
-    constructor(callback: ReadyCallback);
-
-    constructor(options: Partial<DiscoverOptions>);
+    constructor(callback: AsyncNoopCallback);
 
     /**
-     *
      * @param {Partial<DiscoverOptions>} options
-     * @param {ReadyCallback} callback function that is called when everything is up and running
      */
-    constructor(options: Partial<DiscoverOptions>, callback: ReadyCallback);
+    constructor(options: Partial<DiscoverOptions<AdvertisementType, ChannelsType>>);
 
-    constructor(opts?: Partial<DiscoverOptions> | ReadyCallback, readyCallback?: ReadyCallback) {
+    /**
+     * @param {Partial<DiscoverOptions>} options
+     * @param {AsyncNoopCallback} callback function that is called when everything is up and running
+     */
+    constructor(options: Partial<DiscoverOptions<AdvertisementType, ChannelsType>>, callback: AsyncNoopCallback);
+
+    constructor(opts?: Partial<DiscoverOptions<AdvertisementType, ChannelsType>> | AsyncNoopCallback, readyCallback?: AsyncNoopCallback) {
         super();
 
-        const options: Partial<DiscoverOptions> = typeof opts === "function" ? {} : (opts || {});
-        const callback: ReadyCallback | null = typeof opts === "function" ? opts as ReadyCallback : (readyCallback as ReadyCallback || null);
+        const options: Partial<DiscoverOptions<AdvertisementType, ChannelsType>> = typeof opts === "function" ? {} : (opts || {});
+        const callback: AsyncNoopCallback | null = typeof opts === "function" ? opts as AsyncNoopCallback : (readyCallback as AsyncNoopCallback || null);
 
         this.options = {
-            ...DEFAULT_DISCOVER_OPTIONS,
+            helloInterval: 1000,
+            checkInterval: 2000,
+            nodeTimeout: 2000,
+            mastersRequired: 1,
+            leadershipElector: options.leadershipElector !== false ? new BasicLeadershipElection() : false,
+            ignoreProcess: true,
+            ignoreInstance: true,
+            start: true,
+            advertisement: null,
+            network: new BroadcastNetwork() as NetworkInterface<ChannelsType>,
             masterTimeout: options.nodeTimeout || 2000,
             weight: Discover.weight(),
             client: options.client || (!options.client && !options.server),
@@ -71,7 +76,9 @@ export class Discover extends EventEmitter {
             ...options,
         };
 
-        this.leadershipElector = resolveLeadership(this.options.leadershipElector, this);
+        if (this.options.leadershipElector) {
+            this.options.leadershipElector.bind(this);
+        }
 
         if (!(this.options.nodeTimeout >= this.options.checkInterval)) {
             throw new Error("nodeTimeout must be greater than or equal to checkInterval.");
@@ -81,10 +88,6 @@ export class Discover extends EventEmitter {
             throw new Error("masterTimeout must be greater than or equal to nodeTimeout.");
         }
 
-        this.broadcast = new Network({
-            ...this.options,
-        });
-
         this.me = {
             isMaster: false,
             isMasterEligible: this.options.server,
@@ -93,69 +96,9 @@ export class Discover extends EventEmitter {
             advertisement: this.options.advertisement,
         };
 
-        this.evaluateHello = (data: MeNode, message: Message, rinfo: dgram.RemoteInfo) => {
-            // prevent processing hello message from self
-            if (message.iid === this.broadcast.getInstanceUuid()) {
-                return;
-            }
-
-            const id = message.iid;
-
-            const node: Node = {
-                ...data,
-                lastSeen: +new Date(),
-                address: rinfo.address,
-                hostname: message.hostname,
-                port: rinfo.port,
-                id,
-            };
-
-            const isNew = !this.nodes[id];
-            let wasMaster = null;
-
-            if (!isNew) {
-                wasMaster = this.nodes[id].isMaster;
-            }
-
-            this.nodes[id] = node;
-
-            if (isNew) {
-                // new node found
-                this.emit(Events.ADDED, node, message, rinfo);
-            }
-
-            if (node.isMaster) {
-                // if we have this node and it was not previously a master then it is a new master node
-                if ((isNew || !wasMaster)) {
-                    // this is a new master
-                    this.emit(Events.MASTER, node, message, rinfo);
-                }
-            }
-
-            this.emit(Events.HELLO_RECEIVED, node, message, rinfo, isNew, wasMaster);
-        };
-
-        this.broadcast.on("hello", this.evaluateHello);
-        this.broadcast.on("error", (error) => {
+        this.options.network.on("error", (error) => {
             this.emit("error", error);
         });
-
-        this.check = () => {
-            const ids = Object.keys(this.nodes);
-            for (const id of ids) {
-                const node = this.nodes[id];
-                const time = +new Date() - node.lastSeen;
-
-                if (time > (node.isMaster ? this.options.masterTimeout : this.options.nodeTimeout)) {
-                    // we haven't seen the node recently
-                    // delete the node from our nodes list
-                    delete this.nodes[id];
-                    this.emit(Events.REMOVED, node);
-                }
-            }
-
-            this.emit(Events.CHECK);
-        };
 
         //check if auto start is enabled
         if (this.options.start) {
@@ -186,8 +129,8 @@ export class Discover extends EventEmitter {
         return -(Date.now() / Math.pow(10, String(Date.now()).length));
     };
 
-    public getBroadcast(): Network {
-        return this.broadcast;
+    public getId() {
+        return this.id;
     }
 
     public getOptions(): DiscoverOptions {
@@ -229,17 +172,48 @@ export class Discover extends EventEmitter {
             return;
         }
 
-        this.broadcast.start((error: Error | null) => {
+        this.options.network.start((error: Error | null) => {
             if (error) {
                 return callback && callback(error, null);
             }
 
+            this.options.network.on(NetworkEvents.MESSAGE, (message: NetworkMessage<unknown>, rinfo) => {
+                if (message.pid == PROCESS_UUID && this.options.ignoreProcess && message.iid !== this.id) {
+                    return false;
+                } else if (message.iid == this.id && this.options.ignoreInstance) {
+                    return false;
+                } else if (message.event && message.data) {
+                    if (NetworkEvents.HELLO === message.event) {
+                        this.evaluateHello(message.data as MeNode<unknown>, message, rinfo);
+                    } else {
+                        this.emit(message.event, message.data, message, rinfo);
+                    }
+                } else {
+                    this.emit("message", message);
+                }
+            });
+
             this.running = true;
 
-            this.checkId = setInterval(this.check, this.getCheckInterval());
+            this.checkId = setInterval(() => {
+                const ids = Object.keys(this.nodes);
+                for (const id of ids) {
+                    const node = this.nodes[id];
+                    const time = +new Date() - node.lastSeen;
+
+                    if (time > (node.isMaster ? this.options.masterTimeout : this.options.nodeTimeout)) {
+                        // we haven't seen the node recently
+                        // delete the node from our nodes list
+                        delete this.nodes[id];
+                        this.emit(Events.REMOVED, node);
+                    }
+                }
+
+                this.emit(Events.CHECK);
+            }, this.getCheckInterval());
 
             if (this.options.server) {
-                //send hello every helloInterval
+                // send hello every helloInterval
                 this.helloId = setInterval(() => this.hello(), this.getHelloInterval());
 
                 this.hello();
@@ -299,7 +273,7 @@ export class Discover extends EventEmitter {
     }
 
     public hello(): void {
-        this.broadcast.send("hello", this.me);
+        this.options.network.send(NetworkEvents.HELLO, { iid: this.id, data: this.me });
         this.emit(Events.HELLO_EMITTED);
     }
 
@@ -329,7 +303,7 @@ export class Discover extends EventEmitter {
      * ```
      * @param advertisement
      */
-    public advertise(advertisement: unknown) {
+    public advertise(advertisement: AdvertisementType) {
         this.me.advertisement = advertisement;
     }
 
@@ -368,6 +342,9 @@ export class Discover extends EventEmitter {
      * - removed
      * - master
      * - hello
+     * - helloReceived
+     * - helloEmitted
+     *
      *
      * @example
      * ```js
@@ -402,10 +379,6 @@ export class Discover extends EventEmitter {
             this.on(channel, callback);
         }
 
-        this.broadcast.on(channel, (data, obj, rinfo) => {
-            this.emit(channel, data, obj, rinfo);
-        });
-
         this.channels.push(channel);
 
         return true;
@@ -430,7 +403,11 @@ export class Discover extends EventEmitter {
      * @returns {boolean}
      */
     public leave(channel: string) {
-        this.broadcast.removeAllListeners(channel);
+        if (~RESERVED_EVENTS.indexOf(channel)) {
+            return false;
+        }
+
+        this.removeAllListeners(channel);
 
         const index = this.channels.indexOf(channel);
 
@@ -455,16 +432,20 @@ export class Discover extends EventEmitter {
      *   // could not send on that channel; probably because it is reserved
      * }
      * ```
-     * @param {string} channel
-     * @param data
+     *
+     * @param {ChannelName} channel
+     * @param {ChannelsType[ChannelName]} data
      * @returns {boolean}
      */
-    public send(channel: string, data: unknown) {
-        if (~RESERVED_EVENTS.indexOf(channel)) {
+    public send<ChannelName extends keyof ChannelsType>(channel: ChannelName, data: ChannelsType[ChannelName]): boolean {
+        if (~RESERVED_EVENTS.indexOf(channel as string)) {
             return false;
         }
 
-        this.broadcast.send(channel, data);
+        this.options.network.send(channel, {
+            iid: this.id,
+            data,
+        });
 
         return true;
     }
@@ -485,7 +466,7 @@ export class Discover extends EventEmitter {
             return;
         }
 
-        this.broadcast.stop();
+        this.options.network.stop();
 
         if (this.checkId) {
             clearInterval(this.checkId);
@@ -498,6 +479,49 @@ export class Discover extends EventEmitter {
         this.emit(Events.STOPPED, this);
 
         this.running = false;
+    }
+
+    private evaluateHello(data: MeNode, message: NetworkMessage<unknown>, rinfo: dgram.RemoteInfo) {
+        // prevent processing hello message from self
+        if (message.iid === this.id) {
+            return;
+        }
+
+        const id = message.iid;
+
+        const node: Node = {
+            ...data,
+            lastSeen: +new Date(),
+            address: rinfo.address,
+            hostname: message.hostname,
+            port: rinfo.port,
+            id,
+        };
+
+        const isNew = !this.nodes[id];
+        let wasMaster = null;
+
+        if (!isNew) {
+            wasMaster = this.nodes[id].isMaster;
+        }
+
+        this.nodes[id] = node;
+
+        if (isNew) {
+            // new node found
+            this.emit(Events.ADDED, node, message, rinfo);
+        }
+
+        if (node.isMaster) {
+            // if we have this node and it was not previously a master then it is a new master node
+            if ((isNew || !wasMaster)) {
+                // this is a new master
+                this.emit(Events.MASTER, node, message, rinfo);
+            }
+        }
+
+        this.emit(Events.HELLO_RECEIVED, node, message, rinfo, isNew, wasMaster);
+
     }
 
     private getCheckInterval(): number {

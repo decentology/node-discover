@@ -1,7 +1,6 @@
 import { MeNode } from "./MeNode";
 
 /**
- * @category Discover
  * @example
  * ```json
  * {
