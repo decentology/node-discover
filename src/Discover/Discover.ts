@@ -5,7 +5,6 @@ import { AsyncCallback, AsyncNoopCallback } from "../Types/AsyncCallback";
 import { Node } from "./Node";
 import { MeNode } from "./MeNode";
 import { v4 as uuidv4 } from "uuid";
-import { LeadershipElectionInterface } from "../Election/LeadershipElectionInterface";
 import { NodeMapping } from "./NodeMapping";
 import { Events } from "./Events";
 import { EventEmitter } from "events";
@@ -14,7 +13,7 @@ import { NetworkMessage } from "../Network/NetworkMessage";
 import { BasicLeadershipElection, NetworkInterface } from "..";
 import { NetworkEvents } from "../Network/NetworkEvents";
 
-export class Discover<AdvertisementType = unknown, ChannelsType extends Record<string, unknown> = Record<string, unknown>> extends EventEmitter {
+export class Discover<AdvertisementType = unknown, ChannelsType extends object = {}> extends EventEmitter {
 
     private options: DiscoverOptions<AdvertisementType, ChannelsType>;
 
@@ -27,8 +26,6 @@ export class Discover<AdvertisementType = unknown, ChannelsType extends Record<s
     private channels: string[] = [];
 
     private running: boolean = false;
-
-    private leadershipElector?: LeadershipElectionInterface;
 
     private checkId: NodeJS.Timeout | null = null;
 
@@ -184,7 +181,7 @@ export class Discover<AdvertisementType = unknown, ChannelsType extends Record<s
                     return false;
                 } else if (message.event && message.data) {
                     if (NetworkEvents.HELLO === message.event) {
-                        this.evaluateHello(message.data as MeNode<unknown>, message, rinfo);
+                        this.evaluateHello(message.data as MeNode, message, rinfo);
                     } else {
                         this.emit(message.event, message.data, message, rinfo);
                     }
@@ -362,24 +359,25 @@ export class Discover<AdvertisementType = unknown, ChannelsType extends Record<s
      *   // could not join that channel; probably because it is reserved
      * }
      * ```
-     * @param {string} channel
-     * @param {AsyncCallback<DataType>} callback
+     * @param {string | Channel} channel
+     * @param {AsyncCallback<ChannelsType
+     * [Channel]>} callback
      * @returns {boolean}
      */
-    public join<DataType>(channel: string, callback: AsyncCallback<DataType>) {
-        if (~RESERVED_EVENTS.indexOf(channel)) {
+    public join<Channel extends keyof ChannelsType>(channel: Channel | string, callback: AsyncCallback<ChannelsType[Channel]>) {
+        if (~RESERVED_EVENTS.indexOf(channel as string)) {
             return false;
         }
 
-        if (~this.channels.indexOf(channel)) {
+        if (~this.channels.indexOf(channel as string)) {
             return false;
         }
 
         if (callback) {
-            this.on(channel, callback);
+            this.on(channel as string, callback);
         }
 
-        this.channels.push(channel);
+        this.channels.push(channel as string);
 
         return true;
     }
@@ -402,14 +400,14 @@ export class Discover<AdvertisementType = unknown, ChannelsType extends Record<s
      * @param {string} channel
      * @returns {boolean}
      */
-    public leave(channel: string) {
-        if (~RESERVED_EVENTS.indexOf(channel)) {
+    public leave<Channel extends keyof ChannelsType>(channel: Channel | string) {
+        if (~RESERVED_EVENTS.indexOf(channel as string)) {
             return false;
         }
 
-        this.removeAllListeners(channel);
+        this.removeAllListeners(channel as string);
 
-        const index = this.channels.indexOf(channel);
+        const index = this.channels.indexOf(channel as string);
 
         if (index !== -1) {
             this.channels.splice(index);

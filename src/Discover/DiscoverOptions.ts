@@ -1,7 +1,7 @@
 import { LeadershipElectionInterface } from "../Election/LeadershipElectionInterface";
 import { NetworkInterface } from "../Network/NetworkInterface";
 
-export interface DiscoverOptions<AdvertisementType = unknown, EventsType extends Record<string, unknown> = Record<string, unknown>> {
+export interface DiscoverOptions<AdvertisementType = unknown, ChannelsType extends object = {}> {
 
     /**
      * How often to broadcast a hello packet in milliseconds
@@ -83,6 +83,6 @@ export interface DiscoverOptions<AdvertisementType = unknown, EventsType extends
      *
      * @default BroadcastNetwork
      */
-    network: NetworkInterface<EventsType>;
+    network: NetworkInterface<ChannelsType>;
 
 }
